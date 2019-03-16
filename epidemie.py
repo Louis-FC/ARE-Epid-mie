@@ -1,6 +1,7 @@
 import numpy as np
 import random
-
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 ###############################################################################
 
 PROB = 0.2
@@ -8,6 +9,9 @@ TAUX_INFECTION = 8
 TAUX_REINFECTION = 4
 TEMPS_INFECTE = 4
 TEMPS_REMISSION = 4
+couleurs=['green','blue','red']
+NB_LIGNES=50
+NB_COLONNES=50
 ###############################################################################
 
 def rand_prob_infecte(prob):
@@ -117,14 +121,33 @@ def evolution(plateau):
             new_plateau[1][l][c]=matrice_voisins(l,c,plateau)[1]    
     return new_plateau 
 
-#plateau=ini_plateau(25,25)
+plateau=ini_plateau(NB_LIGNES,NB_COLONNES)
+print(plateau)
 #print(plateau)
 #print(evolution(plateau))
 
 
 ###############################################################################
 
+def afficher(plateau):
+    """Affiche sur un graphique en 2D les points d'un plateau pssé en argument"""
+    # Récupère la taille du plateau pour pouvoir le parcourir
+    ligne=plateau.shape[1]
+    colonne=plateau.shape[2]
+    for l in range(ligne):
+        for c in range(colonne):
+            """ Affiche le point de coordonnée l,c de la couleur qui lui est associé""" 
+            plt.scatter(c,-l,c=couleurs[plateau[0][l][c]])
+            """ Notez l'inversion du l et du c dans les coordonnées ainsi que
+            l'apparition d'un signe - devant le l afin de respecter la configuration
+            d'affichage des array numpy"""
+    plt.show()
+    
+#afficher(plateau)
 
+for i in range(10):
+    plateau=evolution(plateau)
+    afficher(plateau) 
 
 
 
