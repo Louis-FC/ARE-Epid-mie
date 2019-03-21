@@ -2,16 +2,17 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import time
 ###############################################################################
-
-PROB = 0.2
-TAUX_INFECTION = 8
-TAUX_REINFECTION = 4
-TEMPS_INFECTE = 4
-TEMPS_REMISSION = 4
-couleurs=['green','blue','red']
-NB_LIGNES=50
-NB_COLONNES=50
+t0 = time.time() # Temps initial du programme
+PROB = 0.2 #Probabilité d'être infecté au premier tour
+TAUX_INFECTION = 8 #Valeur minimum d'infection autour du sujet pour infecter celui-ci
+TAUX_REINFECTION = 4 #Nombre d'infectés minimums necéssaires à la réinfection du sujet si celui-ci est en rémission
+TEMPS_INFECTE = 4 #Nombre de tours nécessiares à une infecté pour passer en rémission
+TEMPS_REMISSION = 4 #Nombre de tours nécessiares à une personne en rémission pour redevenir saine
+couleurs=['green','blue','red'] #Couleurs disponibles à la modélisation
+NB_LIGNES=50 #Nombre de lignes du tableau
+NB_COLONNES=50 #Nombre de colonnes du tableau
 ###############################################################################
 
 def rand_prob_infecte(prob):
@@ -35,7 +36,6 @@ def ini_plateau(ligne,colonne):
 
 #print(ini_plateau(6,10))
 
-
 ###############################################################################
 
 def matrice_voisins(l,c,plateau,):
@@ -54,7 +54,7 @@ def matrice_voisins(l,c,plateau,):
     for x in range(3):
         for y in range(3):
             matrice[0][x][y] = plateau[0][(l+x-1)%nbr_ligne][(c+y-1)%nbr_colonne]
-            matrice[1][x][y] = plateau[1][(l+x-1)%nbr_ligne][(c+y-1)%nbr_colonne]
+    matrice[1][1][1] = plateau[1][l][c]
     
     #ANALYSE DU TABLEAU
 #On initialise la somme à l'opposé de la valeur de la cellule centrale
@@ -145,12 +145,13 @@ def afficher(plateau):
     
 #afficher(plateau)
 
-for i in range(10):
+for i in range(100):
     plateau=evolution(plateau)
     afficher(plateau) 
 
 
-
+tf = time.time() #Temps final
+print(tf - t0) #Affiche la durée d'execution du programme
 
 
 
