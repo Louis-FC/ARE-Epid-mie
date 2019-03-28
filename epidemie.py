@@ -5,14 +5,16 @@ import matplotlib.animation as animation
 import time
 ###############################################################################
 t0 = time.time() # Temps initial du programme
-PROB = 0.2 #Probabilité d'être infecté au premier tour
+PROB = 0.3 #Probabilité d'être infecté au premier tour
 TAUX_INFECTION = 8 #Valeur minimum d'infection autour du sujet pour infecter celui-ci
 TAUX_REINFECTION = 4 #Nombre d'infectés minimums necéssaires à la réinfection du sujet si celui-ci est en rémission
-TEMPS_INFECTE = 4 #Nombre de tours nécessiares à une infecté pour passer en rémission
-TEMPS_REMISSION = 4 #Nombre de tours nécessiares à une personne en rémission pour redevenir saine
+TEMPS_INFECTE = 2 #Nombre de tours nécessiares à une infecté pour passer en rémission
+TEMPS_REMISSION = 2 #Nombre de tours nécessiares à une personne en rémission pour redevenir saine
 couleurs=['green','blue','red'] #Couleurs disponibles à la modélisation
 NB_LIGNES=50 #Nombre de lignes du tableau
 NB_COLONNES=50 #Nombre de colonnes du tableau
+TEMPS_IMMUNISE=5 #Nombre de tours d'immunité après une infection
+NB_REINFECTION=1 #Nombre de réinfections possible avant l'immunité du sujet
 ###############################################################################
 
 def rand_prob_infecte(prob):
@@ -23,18 +25,20 @@ def rand_prob_infecte(prob):
         return 0
     return 2
         
+
 ###############################################################################
 
 
 def ini_plateau(ligne,colonne):
     #Initialise un plateau de jeu de la taille indiquée
-    plateau = np.zeros([2,ligne,colonne]).astype(int)
+    plateau = np.zeros([3,ligne,colonne]).astype(int)
     for l in range(ligne):
         for c in range(colonne):
             plateau[0][l][c]=rand_prob_infecte(PROB)
     return plateau
 
 #print(ini_plateau(6,10))
+
 
 ###############################################################################
 
@@ -48,13 +52,14 @@ def matrice_voisins(l,c,plateau,):
         #Création d'un plateau 3x3
     nbr_ligne=plateau.shape[1]
     nbr_colonne=plateau.shape[2]
-    matrice=np.zeros([2,3,3], dtype=int)
+    matrice=np.zeros([3,3,3], dtype=int)
     
         #Remplissage du nouveau plateau
     for x in range(3):
         for y in range(3):
             matrice[0][x][y] = plateau[0][(l+x-1)%nbr_ligne][(c+y-1)%nbr_colonne]
     matrice[1][1][1] = plateau[1][l][c]
+    matrice[2][1][1] = plateau[2][l][c]
     
     #ANALYSE DU TABLEAU
 #On initialise la somme à l'opposé de la valeur de la cellule centrale
@@ -85,21 +90,26 @@ def matrice_voisins(l,c,plateau,):
         #Personne en rémission
         else:
             if matrice[0][1][1]==1:
-                if nb_infectes>=TAUX_REINFECTION:
-                    matrice[0][1][1]=2
+                if matrice[1][1][1]==TEMPS_REMISSION:
+                    matrice[0][1][1]=0
                     matrice[1][1][1]=0
+                    matrice[2][1][1]=0
                 else:
-                    if matrice[1][1][1]==TEMPS_REMISSION:
-                        matrice[0][1][1]=0
-                        matrice[1][1][1]=0
+                    if matrice[2][1][1]<NB_REINFECTION:
+                        if nb_infectes>=TAUX_REINFECTION:
+                            matrice[0][1][1]=2
+                            matrice[1][1][1]=0
+                            matrice[2][1][1]+=1
+                        else:
+                            matrice[1][1][1]+=1
                     else:
                         matrice[1][1][1]+=1
                         
-                        
     #Retour de la liste résultat
     etat=matrice[0][1][1]
-    compteur=matrice[1][1][1]
-    return [etat,compteur]
+    timer=matrice[1][1][1]
+    reinfection=matrice[2][1][1]
+    return [etat,timer,reinfection]
 
 #plateau=ini_plateau(5,10)
 #print(plateau)
@@ -117,8 +127,10 @@ def evolution(plateau):
     colonne=new_plateau.shape[2]
     for l in range(ligne):
         for c in range(colonne):
-            new_plateau[0][l][c]=matrice_voisins(l,c,plateau)[0]
-            new_plateau[1][l][c]=matrice_voisins(l,c,plateau)[1]    
+            voisins=matrice_voisins(l,c,plateau)
+            new_plateau[0][l][c]=voisins[0]
+            new_plateau[1][l][c]=voisins[1]
+            new_plateau[2][l][c]=voisins[2]
     return new_plateau 
 
 plateau=ini_plateau(NB_LIGNES,NB_COLONNES)
@@ -158,7 +170,7 @@ Liste des choses à faire :
     - Nouvelle matrice pour les comportements
     - Matrice pour le nombre de réinfection (ou modification des règles)
     - Mise en place d'une part d'aléatoire dans la rémission  + ajout d'un temps d'immunité pendant la rémission.
-
+"""
 
 
 
