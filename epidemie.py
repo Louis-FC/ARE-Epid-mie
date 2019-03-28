@@ -3,6 +3,7 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
+import imageio
 ###############################################################################
 t0 = time.time() # Temps initial du programme
 PROB = 0.3 #Probabilité d'être infecté au premier tour
@@ -159,15 +160,16 @@ def afficher(plateau,etape):
     #nom_image=("etape_"+str(etape)+".png")
     nom_image=("Imagerie//etape_{}.png".format(etape))
     plt.savefig(nom_image)
-    plt.show()
-    
+    #plt.show()
+    return nom_image
 #afficher(plateau)
+images=[]
 
-for i in range(10):
+for i in range(3):
     plateau=evolution(plateau)
-    afficher(plateau,i) 
-
-
+    image=afficher(plateau,i) 
+    images.append(imageio.imread(image))
+imageio.mimsave('Imagerie/animation.gif',images, duration=1)
 tf = time.time() #Temps final
 print(tf - t0) #Affiche la durée d'execution du programme
 
@@ -176,9 +178,6 @@ Liste des choses à faire :
     - Nouvelle matrice pour les comportements
     - Mise en place d'une part d'aléatoire dans la rémission
 """
-
-
-
 
 
 
