@@ -145,13 +145,22 @@ def afficher(plateau):
     
 #afficher(plateau)
 
-for i in range(100):
+for i in range(10):
     plateau=evolution(plateau)
     afficher(plateau) 
 
 
 tf = time.time() #Temps final
 print(tf - t0) #Affiche la durée d'execution du programme
+
+"""
+Liste des choses à faire :
+    - Nouvelle matrice pour les comportements
+    - Matrice pour le nombre de réinfection (ou modification des règles)
+    - Mise en place d'une part d'aléatoire dans la rémission  + ajout d'un temps d'immunité pendant la rémission.
+
+
+
 
 
 
