@@ -75,8 +75,11 @@ def matrice_voisins(l,c,plateau,):
     #EVOLUTION
         #Personne saine
     if matrice[0][1][1]==0:
-        if somme>=TAUX_INFECTION:
-            matrice[0][1][1]=2        
+        if matrice[1][1][1]==0:
+            if somme>=TAUX_INFECTION:
+                matrice[0][1][1]=2
+        else:
+            matrice[1][1][1]-=1
     
         #Personne infectée
     else:
@@ -92,7 +95,7 @@ def matrice_voisins(l,c,plateau,):
             if matrice[0][1][1]==1:
                 if matrice[1][1][1]==TEMPS_REMISSION:
                     matrice[0][1][1]=0
-                    matrice[1][1][1]=0
+                    matrice[1][1][1]=TEMPS_IMMUNISE
                     matrice[2][1][1]=0
                 else:
                     if matrice[2][1][1]<NB_REINFECTION:
@@ -141,7 +144,7 @@ print(plateau)
 
 ###############################################################################
 
-def afficher(plateau):
+def afficher(plateau,etape):
     """Affiche sur un graphique en 2D les points d'un plateau pssé en argument"""
     # Récupère la taille du plateau pour pouvoir le parcourir
     ligne=plateau.shape[1]
@@ -153,13 +156,16 @@ def afficher(plateau):
             """ Notez l'inversion du l et du c dans les coordonnées ainsi que
             l'apparition d'un signe - devant le l afin de respecter la configuration
             d'affichage des array numpy"""
+    #nom_image=("etape_"+str(etape)+".png")
+    nom_image=("Imagerie//etape_{}.png".format(etape))
+    plt.savefig(nom_image)
     plt.show()
     
 #afficher(plateau)
 
 for i in range(10):
     plateau=evolution(plateau)
-    afficher(plateau) 
+    afficher(plateau,i) 
 
 
 tf = time.time() #Temps final
@@ -168,8 +174,7 @@ print(tf - t0) #Affiche la durée d'execution du programme
 """
 Liste des choses à faire :
     - Nouvelle matrice pour les comportements
-    - Matrice pour le nombre de réinfection (ou modification des règles)
-    - Mise en place d'une part d'aléatoire dans la rémission  + ajout d'un temps d'immunité pendant la rémission.
+    - Mise en place d'une part d'aléatoire dans la rémission
 """
 
 
