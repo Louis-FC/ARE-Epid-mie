@@ -9,12 +9,13 @@ couleurs_comportement=['green','green','orange','orange','yellow','red']
 NB_LIGNES=50 #Nombre de lignes du tableau
 NB_COLONNES=50 #Nombre de colonnes du tableau
 t0 = time.time() # Temps initial du programme
+SEUIL_EPIDEMIQUE = 1
 
 PROB_INFECTE = 0.1 #Probabilité d'être infecté au premier tour
 PROB_REMISSION = 0.05 #Probabilité d'être en rémission au premier tour
-PROB_COMPORTEMENT_2 = 1 #Probabilité d'avoir le comportement 2
-PROB_COMPORTEMENT_4 = 0 #Probabilité d'avoir le comportement 4
-PROB_COMPORTEMENT_5 = 0 #Probabilité d'avoir le comportement 5
+PROB_COMPORTEMENT_2 = 0.3 #Probabilité d'avoir le comportement 2
+PROB_COMPORTEMENT_4 = 0.2 #Probabilité d'avoir le comportement 4
+PROB_COMPORTEMENT_5 = 0.4 #Probabilité d'avoir le comportement 5
 PROB_INFECTE_INCREMENTATION = [0.75,0.9,0.5,0.65,0.75,0.5] #Probabilité d'incrémenter son compteur pour passer d'infécté à personne en rémission selon le comportement
 PROB_REMISSION_INCREMENTATION = [0.75,0.9,0.5,0.65,0.75,0.5] #Probabilité d'incrémenter son compteur pour passer de personne en rémission à personne saine selon le comportement
 TAUX_INFECTION = [6,8,4,5,6,4] #Valeur minimum d'infection autour du sujet pour infecter celui-ci selon son comportement
@@ -23,6 +24,8 @@ TEMPS_INFECTE = [3,2,5,4,3,5] #Nombre de tours nécessiares à une infecté pour
 TEMPS_REMISSION = [3,2,5,4,3,5] #Nombre de tours nécessiares à une personne en rémission pour redevenir saine selon son comportement
 TEMPS_IMMUNISE = 3 #Nombre de tours d'immunité à la fin d'une infection
 NB_REINFECTION=2 #Nombre de réinfections possible avant l'immunité du sujet
+NB_IFECTES=0 #Nombre d'infectés à un instant t
+NB_IFECTES_TOUR_SUIVANT=0 #Nombre d'infectés à un instant t+1
 ###############################################################################
 
 def rand_prob_infecte(prob1, prob2):
@@ -59,7 +62,15 @@ def ini_plateau(ligne,colonne):
             plateau[3][l][c]=rand_prob_comportement(PROB_COMPORTEMENT_2,PROB_COMPORTEMENT_4,PROB_COMPORTEMENT_5)
     return plateau
 
+###############################################################################
 
+def cluster(plateau,x,y,cote,matrice,etat):
+    ligne=plateau.shape[1]
+    colonne=plateau.shape[2]
+    for l in range(x+1,x+cote+1):
+        for c in range(y+1,y+cote+1):
+            plateau[matrice][(x+l-1)%ligne][(y+c-1)%colonne] = etat
+    return plateau
 
 ###############################################################################
 
@@ -69,26 +80,58 @@ def incrementation_alea(prob):
         return 0
     return 1
 
+###############################################################################
+    
+def nb_infectes(plateau):
+    nb_inf = 0
+    ligne=plateau.shape[1]
+    colonne=plateau.shape[2]
+    for l in range(ligne):
+        for c in range(colonne):
+            if plateau[0][l][c] == 2:
+                nb_inf+=1
+    return nb_inf
 
 ###############################################################################
 
-def matrice_voisins(l,c,plateau,):
+def pourcentage_infec(plateau):
+    ligne=plateau.shape[1]
+    colonne=plateau.shape[2]
+    return nb_infectes(plateau)/(ligne*colonne)*100
+
+###############################################################################
+
+def nouv_cas_infec(plateau,nouv_plateau):
+    ligne=plateau.shape[1]
+    colonne=plateau.shape[2]
+    nouv_cas=0
+    for l in range(ligne):
+        for c in range(colonne):
+            if plateau[0][l][c] != 2 and nouv_plateau[0][l][c] == 2:
+                nouv_cas+=1
+    return nouv_cas
+
+###############################################################################
+
+def matrice_voisins(l,c,plateau,nouv_infectes):
     """Extrait la matrice 3x3 autour de la coordonée choisie, 
     puis applique à la cellule centrale les règles d'évolution,
     et retourne la liste contenant son état et son compteur après l'évolution"""
-    
     
     #EXTRACTION
         #Création d'un plateau 3x3
     nbr_ligne=plateau.shape[1]
     nbr_colonne=plateau.shape[2]
     matrice=np.zeros([4,3,3], dtype=int)
-    
         #Remplissage du nouveau plateau
     for x in range(3):
         for y in range(3):
             matrice[0][x][y] = plateau[0][(l+x-1)%nbr_ligne][(c+y-1)%nbr_colonne]
-            matrice[3][x][y] = plateau[3][(l+x-1)%nbr_ligne][(c+y-1)%nbr_colonne]
+    if nouv_infectes >= SEUIL_EPIDEMIQUE:
+        if plateau[3][1][1] == 0 or plateau[3][1][1] == 2:
+            matrice[3][1][1] = plateau[3][1][1]+1
+        else:
+            matrice[3][1][1] = plateau[3][1][1]
     matrice[1][1][1] = plateau[1][l][c]
     matrice[2][1][1] = plateau[2][l][c]
     
@@ -151,17 +194,19 @@ def matrice_voisins(l,c,plateau,):
 ###############################################################################
 
 
-def evolution(plateau):
+def evolution(ancien_plateau,plateau):
 #    Génère la grille à l'étape suivante
     new_plateau = np.zeros(plateau.shape).astype(int)
     ligne=new_plateau.shape[1]
     colonne=new_plateau.shape[2]
+    nouv_infectes = nouv_cas_infec(ancien_plateau,plateau)
     for l in range(ligne):
         for c in range(colonne):
-            voisins=matrice_voisins(l,c,plateau)
+            voisins=matrice_voisins(l,c,plateau,nouv_infectes)
             new_plateau[0][l][c]=voisins[0]
             new_plateau[1][l][c]=voisins[1]
             new_plateau[2][l][c]=voisins[2]
+            new_plateau[3][l][c]=voisins[3]
     return new_plateau 
 
 
@@ -211,16 +256,27 @@ def creation_gif(plateau, nbr_etapes):
 
 ###############################################################################
 
-plateau=ini_plateau(NB_LIGNES,NB_COLONNES)
-print(plateau)
+nouv_plateau=ini_plateau(NB_LIGNES,NB_COLONNES)
+print(nouv_plateau)
 
-sauvegarder_image_comportement(plateau)
+nouv_plateau=cluster(nouv_plateau,0,0,50,3,0)
+nouv_plateau=cluster(nouv_plateau,0,0,10,0,0)
+sauvegarder_image_comportement(nouv_plateau)
+ancien_plateau = nouv_plateau
+NB_IFECTES_TOUR_SUIVANT=nb_infectes(nouv_plateau)
 
-for i in range(25):
-    sauvegarder_image_etat(plateau,i)
-    plateau=evolution(plateau)
-
-
+for i in range(3):
+    #NB_IFECTES = NB_IFECTES_TOUR_SUIVANT
+    sauvegarder_image_etat(ancien_plateau,i)
+    print(nouv_cas_infec(ancien_plateau,nouv_plateau))
+    plateau=evolution(ancien_plateau,nouv_plateau)
+    #NB_INFECTES_TOUR_SUIVANT = nb_infectes(plateau)
+    ancien_plateau = np.copy(nouv_plateau)
+    nouv_plateau = np.copy(plateau)
+    sauvegarder_image_comportement(nouv_plateau)
+    
+print(nb_infectes(plateau))
+print(pourcentage_infec(plateau))
 
 tf = time.time() #Temps final
 print(tf - t0) #Affiche la durée d'execution du programme
