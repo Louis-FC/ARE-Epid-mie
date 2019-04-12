@@ -2,7 +2,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import time
-#import imageio
+import imageio
 ###############################################################################
 couleurs_etat=['green','blue','red'] #Couleurs disponibles à la modélisation
 couleurs_comportement=['green','green','orange','orange','yellow','red']
@@ -24,12 +24,26 @@ TEMPS_INFECTE = [3,2,5,4,3,5] #Nombre de tours nécessiares à une infecté pour
 TEMPS_REMISSION = [3,2,5,4,3,5] #Nombre de tours nécessiares à une personne en rémission pour redevenir saine selon son comportement
 TEMPS_IMMUNISE = 3 #Nombre de tours d'immunité à la fin d'une infection
 NB_REINFECTION=2 #Nombre de réinfections possible avant l'immunité du sujet
-NB_IFECTES=0 #Nombre d'infectés à un instant t
-NB_IFECTES_TOUR_SUIVANT=0 #Nombre d'infectés à un instant t+1
+NB_INFECTES_TOUR_SUIVANT=0 #Nombre d'infectés à un instant t+1
+
+NB_TOURS = 2 #Nombre de tours de simulation
+#Coordonnées du Cluster d'états
+X_CLUSTER_ETAT = 0 
+Y_CLUSTER_ETAT = 0
+#Coordonnées du Cluster de comportement
+X_CLUSTER_COMPORTEMENT = 0
+Y_CLUSTER_COMPORTEMENT = 0
+#Taille des clusters
+TAILLE_CLUSTER_ETAT = 0
+TAILLE_CLUSTER_COMPORTEMENT = 0
+#Etat des clusters
+ETAT_CLUSTER_ETAT = 0
+ETAT_CLUSTER_COMPORTEMENT = 0
+TEMPS_PAUSE = 1 #Temps de pause entre chaque image du gif en secondes
 ###############################################################################
 
 def rand_prob_infecte(prob1, prob2):
-    #Définie un nombre aleatoire selon une loi de probabilité
+    #Définie un nombre aleatoire correspondant à un état
     """Prob doit être donnée en frequence"""
     res = random.random()
     if res>prob1+prob2:
@@ -41,6 +55,7 @@ def rand_prob_infecte(prob1, prob2):
 ###############################################################################
 
 def rand_prob_comportement(prob1, prob2, prob3):
+    #Définie un nombre aléatoire correspondant à un comportement
     res = random.random()
     if res>prob1+prob2+prob3:
         return 0
@@ -65,6 +80,7 @@ def ini_plateau(ligne,colonne):
 ###############################################################################
 
 def cluster(plateau,x,y,cote,matrice,etat):
+    #Créer un cluster carré selon des coordonnées de départ un côté et un état dans la matrice souhaitée
     ligne=plateau.shape[1]
     colonne=plateau.shape[2]
     for l in range(x+1,x+cote+1):
@@ -75,6 +91,7 @@ def cluster(plateau,x,y,cote,matrice,etat):
 ###############################################################################
 
 def incrementation_alea(prob):
+    #Renvoie aléatoirement 0 ou 1 avec une probabilité prob 
     res = random.random()
     if res>prob:
         return 0
@@ -83,6 +100,7 @@ def incrementation_alea(prob):
 ###############################################################################
     
 def nb_infectes(plateau):
+    #Retourne le nombre d'individus infectés sur le plateau
     nb_inf = 0
     ligne=plateau.shape[1]
     colonne=plateau.shape[2]
@@ -95,6 +113,7 @@ def nb_infectes(plateau):
 ###############################################################################
 
 def pourcentage_infec(plateau):
+    #Renvoie le pourcentage d'individus infectés sur le plateau
     ligne=plateau.shape[1]
     colonne=plateau.shape[2]
     return nb_infectes(plateau)/(ligne*colonne)*100
@@ -102,6 +121,7 @@ def pourcentage_infec(plateau):
 ###############################################################################
 
 def nouv_cas_infec(plateau,nouv_plateau):
+    #Retourne le nombre de nouvelles infections entre deux tours
     ligne=plateau.shape[1]
     colonne=plateau.shape[2]
     nouv_cas=0
@@ -127,11 +147,14 @@ def matrice_voisins(l,c,plateau,nouv_infectes):
     for x in range(3):
         for y in range(3):
             matrice[0][x][y] = plateau[0][(l+x-1)%nbr_ligne][(c+y-1)%nbr_colonne]
+    #Prise en compte des changements de comportements dûs au dépassement du seuil épidémique  
     if nouv_infectes >= SEUIL_EPIDEMIQUE:
-        if plateau[3][1][1] == 0 or plateau[3][1][1] == 2:
-            matrice[3][1][1] = plateau[3][1][1]+1
+        if plateau[3][l][c] == 0 or plateau[3][l][c] == 2:
+            matrice[3][1][1] = plateau[3][l][c]+1
         else:
-            matrice[3][1][1] = plateau[3][1][1]
+            matrice[3][1][1] = plateau[3][l][c]
+    else:
+            matrice[3][1][1] = plateau[3][l][c]
     matrice[1][1][1] = plateau[1][l][c]
     matrice[2][1][1] = plateau[2][l][c]
     
@@ -212,8 +235,8 @@ def evolution(ancien_plateau,plateau):
 
 ###############################################################################
 
-def sauvegarder_image_etat(plateau,etape):
-    """Affiche sur un graphique en 2D les points d'un plateau pssé en argument"""
+def sauvegarder_image_etat(plateau,etape,afficher=False):
+    #Sauvegarde le graphique de la matrice état et l'affiche si demandé
     # Récupère la taille du plateau pour pouvoir le parcourir
     ligne=plateau.shape[1]
     colonne=plateau.shape[2]
@@ -224,14 +247,18 @@ def sauvegarder_image_etat(plateau,etape):
             """ Notez l'inversion du l et du c dans les coordonnées ainsi que
             l'apparition d'un signe - devant le l afin de respecter la configuration
             d'affichage des array numpy"""
-    #nom_image=("Imagerie//etape_{}.png".format(etape))
-    #plt.savefig(nom_image)
-    plt.show()
-    #return nom_image
+    #Sauvegarde de l'image
+    nom_image=("Imagerie//etape_{}.png".format(etape))
+    plt.savefig(nom_image)
+    #Affichage de l'image si demandé 
+    if afficher:
+        plt.show()
+    return nom_image
 
 ###############################################################################
 
-def sauvegarder_image_comportement(plateau):
+def sauvegarder_image_comportement(plateau,afficher=False):
+    #Sauvegarde le graphique de la matrice comportement et l'affiche si demandé
     ligne=plateau.shape[1]
     colonne=plateau.shape[2]
     for l in range(ligne):
@@ -243,85 +270,50 @@ def sauvegarder_image_comportement(plateau):
             d'affichage des array numpy"""
     nom_image=("Imagerie//comportement.png")
     plt.savefig(nom_image)
-    plt.show()
+    if afficher:
+        plt.show()
 
 ###############################################################################
-def creation_gif(plateau, nbr_etapes):
+def creation_gif(plateau,t_pause,images):
+    #Créé un gif du graphique des états en fonction du temps de pause et d'un tableau d'images
+    imageio.mimsave('Imagerie/animation.gif',images, duration=t_pause)
+
+###############################################################################
+
+def main(nb_tours,x1,y1,cote1,etat1,x2,y2,cote2,etat2,t_pause,afficher=False,gif=False,cluster_etat=False,cluster_comportement=False):
     images=[]
-    for i in range(nbr_etapes):
-        plateau=evolution(plateau)
-        image=sauvegarder_image_etat(plateau,i) 
+    nouv_plateau=ini_plateau(NB_LIGNES,NB_COLONNES)
+    if cluster_etat:
+        nouv_plateau=cluster(nouv_plateau,x1,y1,cote1,0,etat1)
+    if cluster_comportement:
+        nouv_plateau=cluster(nouv_plateau,x2,y2,cote2,3,etat2)
+    if afficher:
+        print("\nMatrice des comportements:\n")
+    sauvegarder_image_comportement(nouv_plateau,afficher)
+    ancien_plateau = nouv_plateau
+    NB_INFECTES_TOUR_SUIVANT=nb_infectes(nouv_plateau) 
+    for i in range(nb_tours):
+        print("Tour {}:\n".format(i))
+        image=sauvegarder_image_etat(ancien_plateau,i,afficher)
+        print("Il y a ",nouv_cas_infec(ancien_plateau,nouv_plateau),"nouveaux infectés\n")
+        plateau=evolution(ancien_plateau,nouv_plateau)
         images.append(imageio.imread(image))
-    imageio.mimsave('Imagerie/animation.gif',images, duration=1)
-
+        NB_INFECTES_TOUR_SUIVANT = nb_infectes(plateau)
+        print("Il y a {} infectés".format(NB_INFECTES_TOUR_SUIVANT))
+        ancien_plateau = np.copy(nouv_plateau)
+        nouv_plateau = np.copy(plateau)
+    if gif:
+        creation_gif(plateau,t_pause,images)
+    
+    
 ###############################################################################
 
-nouv_plateau=ini_plateau(NB_LIGNES,NB_COLONNES)
-print(nouv_plateau)
 
-nouv_plateau=cluster(nouv_plateau,0,0,50,3,0)
-nouv_plateau=cluster(nouv_plateau,0,0,10,0,0)
-sauvegarder_image_comportement(nouv_plateau)
-ancien_plateau = nouv_plateau
-NB_IFECTES_TOUR_SUIVANT=nb_infectes(nouv_plateau)
+main(NB_TOURS,X_CLUSTER_ETAT,Y_CLUSTER_ETAT,TAILLE_CLUSTER_ETAT,ETAT_CLUSTER_ETAT,X_CLUSTER_COMPORTEMENT,Y_CLUSTER_COMPORTEMENT,TAILLE_CLUSTER_COMPORTEMENT,ETAT_CLUSTER_COMPORTEMENT,TEMPS_PAUSE,False,True,True,True)
 
-for i in range(3):
-    #NB_IFECTES = NB_IFECTES_TOUR_SUIVANT
-    sauvegarder_image_etat(ancien_plateau,i)
-    print(nouv_cas_infec(ancien_plateau,nouv_plateau))
-    plateau=evolution(ancien_plateau,nouv_plateau)
-    #NB_INFECTES_TOUR_SUIVANT = nb_infectes(plateau)
-    ancien_plateau = np.copy(nouv_plateau)
-    nouv_plateau = np.copy(plateau)
-    sauvegarder_image_comportement(nouv_plateau)
-    
-print(nb_infectes(plateau))
-print(pourcentage_infec(plateau))
 
 tf = time.time() #Temps final
-print(tf - t0) #Affiche la durée d'execution du programme
-
-#%%
-
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
-def gen_img():
-    """
-    """
-    
-    img_np = np.random.randint(0,255, 100).reshape(10,10)
-    img = plt.imshow(img_np)
-    
-    return img
-
-fig = plt.figure()
-
-ims = []
-for i in range(10):
-    img = gen_img()
-    ims.append([img])
-    
-anim = animation.ArtistAnimation(fig, ims)
-    
-    
-#%%
-
-
-
-
-
-
-
-
-
-
-
-"""
-Liste des choses à faire :
-    - Créer des clusters de comportements
-"""
+print("durée d'exécution du programme: ",tf - t0,"s") #Affiche la durée d'execution du programme
 
 
 
